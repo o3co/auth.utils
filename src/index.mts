@@ -1,1 +1,2 @@
 export { createLogger, type Logger, type LoggerOptions } from "./logger.mjs";
+export { gracefulShutdown } from "./shutdown.mjs";
