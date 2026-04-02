@@ -1,9 +1,9 @@
 import express from "express";
 
 export function createHealthcheckRouter(path = "/healthcheck"): express.Router {
-  const router = express.Router();
-  router.get(path, (_req, res) => {
-    res.status(200).json({ status: "ok" });
-  });
-  return router;
+	const router = express.Router();
+	router.get(path, (_req, res) => {
+		res.status(200).json({ status: "ok" });
+	});
+	return router;
 }

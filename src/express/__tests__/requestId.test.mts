@@ -3,79 +3,76 @@ import { describe, expect, it } from "vitest";
 import { createRequestIdMiddleware } from "../requestId.mjs";
 
 function createApp(options?: Parameters<typeof createRequestIdMiddleware>[0]): express.Express {
-  const app = express();
-  app.use(createRequestIdMiddleware(options));
-  app.get("/test", (req, res) => {
-    res.json({ requestId: req.headers["x-request-id"] });
-  });
-  return app;
+	const app = express();
+	app.use(createRequestIdMiddleware(options));
+	app.get("/test", (req, res) => {
+		res.json({ requestId: req.headers["x-request-id"] });
+	});
+	return app;
 }
 
-async function request(
-  app: express.Express,
-  headers?: Record<string, string>,
-) {
-  const server = app.listen(0);
-  const port = (server.address() as { port: number }).port;
-  try {
-    const res = await fetch(`http://localhost:${port}/test`, { headers });
-    const body = await res.json();
-    return {
-      status: res.status,
-      body,
-      responseHeaders: Object.fromEntries(res.headers.entries()),
-    };
-  } finally {
-    server.close();
-  }
+async function request(app: express.Express, headers?: Record<string, string>) {
+	const server = app.listen(0);
+	const port = (server.address() as { port: number }).port;
+	try {
+		const res = await fetch(`http://localhost:${port}/test`, { headers });
+		const body = (await res.json()) as Record<string, unknown>;
+		return {
+			status: res.status,
+			body,
+			responseHeaders: Object.fromEntries(res.headers.entries()),
+		};
+	} finally {
+		server.close();
+	}
 }
 
 describe("createRequestIdMiddleware", () => {
-  it("generates a request ID when none is provided", async () => {
-    const app = createApp();
-    const { body, responseHeaders } = await request(app);
-    expect(body.requestId).toBeTruthy();
-    expect(responseHeaders["x-request-id"]).toBe(body.requestId);
-  });
+	it("generates a request ID when none is provided", async () => {
+		const app = createApp();
+		const { body, responseHeaders } = await request(app);
+		expect(body.requestId).toBeTruthy();
+		expect(responseHeaders["x-request-id"]).toBe(body.requestId);
+	});
 
-  it("preserves existing x-request-id header", async () => {
-    const app = createApp();
-    const { body, responseHeaders } = await request(app, {
-      "x-request-id": "existing-id-123",
-    });
-    expect(body.requestId).toBe("existing-id-123");
-    expect(responseHeaders["x-request-id"]).toBe("existing-id-123");
-  });
+	it("preserves existing x-request-id header", async () => {
+		const app = createApp();
+		const { body, responseHeaders } = await request(app, {
+			"x-request-id": "existing-id-123",
+		});
+		expect(body.requestId).toBe("existing-id-123");
+		expect(responseHeaders["x-request-id"]).toBe("existing-id-123");
+	});
 
-  it("supports custom header name", async () => {
-    const app = express();
-    app.use(createRequestIdMiddleware({ header: "X-Trace-Id" }));
-    app.get("/test", (req, res) => {
-      res.json({ traceId: req.headers["x-trace-id"] });
-    });
+	it("supports custom header name", async () => {
+		const app = express();
+		app.use(createRequestIdMiddleware({ header: "X-Trace-Id" }));
+		app.get("/test", (req, res) => {
+			res.json({ traceId: req.headers["x-trace-id"] });
+		});
 
-    const server = app.listen(0);
-    const port = (server.address() as { port: number }).port;
-    try {
-      const res = await fetch(`http://localhost:${port}/test`);
-      const body = await res.json();
-      expect(body.traceId).toBeTruthy();
-      expect(res.headers.get("x-trace-id")).toBe(body.traceId);
-    } finally {
-      server.close();
-    }
-  });
+		const server = app.listen(0);
+		const port = (server.address() as { port: number }).port;
+		try {
+			const res = await fetch(`http://localhost:${port}/test`);
+			const body = (await res.json()) as Record<string, unknown>;
+			expect(body.traceId).toBeTruthy();
+			expect(res.headers.get("x-trace-id")).toBe(body.traceId as string);
+		} finally {
+			server.close();
+		}
+	});
 
-  it("supports custom generator function", async () => {
-    const app = createApp({ generator: () => "custom-id-999" });
-    const { body } = await request(app);
-    expect(body.requestId).toBe("custom-id-999");
-  });
+	it("supports custom generator function", async () => {
+		const app = createApp({ generator: () => "custom-id-999" });
+		const { body } = await request(app);
+		expect(body.requestId).toBe("custom-id-999");
+	});
 
-  it("default ID format matches YYYYMMDDHHMMSS_uuid pattern", async () => {
-    const app = createApp();
-    const { body } = await request(app);
-    // Format: 14 digits _ 32 hex chars
-    expect(body.requestId).toMatch(/^\d{14}_[0-9a-f]{32}$/);
-  });
+	it("default ID format matches YYYYMMDDHHMMSS_uuid pattern", async () => {
+		const app = createApp();
+		const { body } = await request(app);
+		// Format: 14 digits _ 32 hex chars
+		expect(body.requestId).toMatch(/^\d{14}_[0-9a-f]{32}$/);
+	});
 });
