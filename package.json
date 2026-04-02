@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.29.3",
-  "private": true,
   "type": "module",
+  "files": ["dist", "LICENSE", "README.md"],
   "exports": {
     ".": {
       "import": "./dist/index.mjs",
