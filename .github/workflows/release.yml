@@ -27,7 +27,7 @@ jobs:
           cache: pnpm
 
       - name: Set version from tag
-        run: pnpm version "${GITHUB_REF#refs/tags/v}" --no-git-tag-version --no-commit-hooks
+        run: pnpm version "${GITHUB_REF#refs/tags/v}" --no-git-tag-version --no-commit-hooks --allow-same-version
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
