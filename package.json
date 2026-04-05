@@ -1,11 +1,15 @@
 {
   "name": "@o3co/auth.utils",
   "description": "Shared utilities for auth.* services",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.29.3",
   "type": "module",
-  "files": ["dist", "LICENSE", "README.md"],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.mjs",
