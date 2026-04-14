@@ -1,5 +1,10 @@
 # @o3co/auth.utils
 
+[![CI](https://github.com/o3co/auth.utils/actions/workflows/ci.yml/badge.svg)](https://github.com/o3co/auth.utils/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@o3co/auth.utils)](https://www.npmjs.com/package/@o3co/auth.utils)
+[![codecov](https://codecov.io/gh/o3co/auth.utils/graph/badge.svg)](https://codecov.io/gh/o3co/auth.utils)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
 Shared utilities for auth.* services.
 
 ## Install
