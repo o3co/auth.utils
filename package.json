@@ -1,11 +1,11 @@
 {
   "name": "@o3co/auth.utils",
   "description": "Shared utilities for auth.* services",
-  "version": "0.0.2",
+  "version": "0.0.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/o3co/auth.utils"
+    "url": "https://github.com/o3co/auth.utils.git"
   },
   "packageManager": "pnpm@10.29.3",
   "type": "module",
