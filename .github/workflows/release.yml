@@ -13,41 +13,67 @@ jobs:
   publish:
     name: Publish to npm
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: pnpm
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ hashFiles('**/package.json') }}
+          restore-keys: pnpm-store-
 
       - name: Set version from tag
         run: pnpm version "${GITHUB_REF#refs/tags/v}" --no-git-tag-version --no-commit-hooks --allow-same-version
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
 
-      - name: Type check
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
-
-      - name: Create GitHub Release
+      - name: Create GitHub Release (draft)
         uses: softprops/action-gh-release@v2
         with:
+          draft: true
           generate_release_notes: true
 
+      - name: Check if already published
+        id: npm_check
+        shell: bash
+        run: |
+          PACKAGE_VERSION="${GITHUB_REF#refs/tags/v}"
+          set +e
+          OUTPUT="$(npm view "@o3co/auth.utils@${PACKAGE_VERSION}" version 2>&1)"
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -eq 0 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          elif printf '%s\n' "$OUTPUT" | grep -qE 'E404|404 Not Found'; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "npm view failed unexpectedly:" >&2
+            printf '%s\n' "$OUTPUT" >&2
+            exit "$STATUS"
+          fi
+
       - name: Publish
+        if: steps.npm_check.outputs.skip != 'true'
         run: pnpm publish --access public --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          generate_release_notes: true
