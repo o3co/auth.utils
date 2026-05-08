@@ -45,7 +45,7 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
+		const closeIdleSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
 			order.push("exit");
 			return undefined as never;
@@ -62,7 +62,7 @@ describe("gracefulShutdown", () => {
 		expect(order).toEqual(["close", "cleanup", "exit"]);
 
 		closeSpy.mockRestore();
-		closeAllSpy.mockRestore();
+		closeIdleSpy.mockRestore();
 		exitSpy.mockRestore();
 		onSpy.mockRestore();
 	});
@@ -78,7 +78,7 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
+		const closeIdleSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		let exitObservedCleanupResolved = false;
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
 			exitObservedCleanupResolved = cleanupResolved;
@@ -99,7 +99,7 @@ describe("gracefulShutdown", () => {
 		expect(exitObservedCleanupResolved).toBe(true);
 
 		closeSpy.mockRestore();
-		closeAllSpy.mockRestore();
+		closeIdleSpy.mockRestore();
 		exitSpy.mockRestore();
 		onSpy.mockRestore();
 	});
@@ -114,7 +114,7 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
+		const closeIdleSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 		const onSpy = vi.spyOn(process, "on");
@@ -130,7 +130,7 @@ describe("gracefulShutdown", () => {
 		expect(exitSpy).toHaveBeenCalledWith(0);
 
 		closeSpy.mockRestore();
-		closeAllSpy.mockRestore();
+		closeIdleSpy.mockRestore();
 		exitSpy.mockRestore();
 		errorSpy.mockRestore();
 		onSpy.mockRestore();
@@ -142,7 +142,8 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
+		const closeIdleSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
+		const closeAllSpy = vi.spyOn(server, "closeAllConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 		const onSpy = vi.spyOn(process, "on");
 
@@ -153,9 +154,13 @@ describe("gracefulShutdown", () => {
 		handler();
 		await flushMicrotasks();
 
-		expect(closeAllSpy).toHaveBeenCalledOnce();
+		expect(closeIdleSpy).toHaveBeenCalledOnce();
+		// Regression defense: closeAllConnections aborts in-flight requests.
+		// Pre-Round 1 spec premise was wrong; never reintroduce.
+		expect(closeAllSpy).not.toHaveBeenCalled();
 
 		closeSpy.mockRestore();
+		closeIdleSpy.mockRestore();
 		closeAllSpy.mockRestore();
 		exitSpy.mockRestore();
 		onSpy.mockRestore();
@@ -168,7 +173,7 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
+		const closeIdleSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 		const onSpy = vi.spyOn(process, "on");
 
@@ -186,7 +191,7 @@ describe("gracefulShutdown", () => {
 		expect(exitSpy).toHaveBeenCalledWith(0);
 
 		closeSpy.mockRestore();
-		closeAllSpy.mockRestore();
+		closeIdleSpy.mockRestore();
 		exitSpy.mockRestore();
 		onSpy.mockRestore();
 	});
@@ -197,7 +202,7 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
+		const closeIdleSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 		const onSpy = vi.spyOn(process, "on");
 
@@ -214,7 +219,7 @@ describe("gracefulShutdown", () => {
 		expect(exitSpy).toHaveBeenCalledWith(0);
 
 		closeSpy.mockRestore();
-		closeAllSpy.mockRestore();
+		closeIdleSpy.mockRestore();
 		exitSpy.mockRestore();
 		onSpy.mockRestore();
 	});

@@ -47,12 +47,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- **`server.closeIdleConnections()` is invoked in parallel with
-  `server.close()`** so the close callback can fire promptly on Node 18.x
-  without waiting for keep-alive timeouts. Active in-flight requests are
-  not affected — only idle keep-alive connections are released. Requires
-  Node.js >= 18.2.0; `package.json` now declares
-  `engines.node >= 18.19.0` which already satisfies this.
+- **`server.closeIdleConnections()` is invoked synchronously after
+  `server.close()` registers its callback** so the close callback can
+  fire promptly on Node 18.x without waiting for keep-alive timeouts.
+  Active in-flight requests are not affected — only idle keep-alive
+  connections are released. Requires Node.js >= 18.2.0; `package.json`
+  now declares `engines.node >= 18.19.0` which already satisfies this.
 - **`engines.node >= 18.19.0`** declared in `package.json` to match the
   consumer floor (`auth.provider`) and to fail fast for installers on
   pre-18.2 Node where `closeIdleConnections` is undefined.
