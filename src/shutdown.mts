@@ -1,7 +1,12 @@
 import type { Server } from "node:http";
 
 export function gracefulShutdown(server: Server, cleanup?: () => void | Promise<void>): void {
+	let shuttingDown = false;
 	const handler = (): void => {
+		if (shuttingDown) return;
+		shuttingDown = true;
+		process.removeListener("SIGTERM", handler);
+		process.removeListener("SIGINT", handler);
 		server.close(async () => {
 			try {
 				await cleanup?.();

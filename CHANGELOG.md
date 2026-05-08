@@ -56,6 +56,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`engines.node >= 18.19.0`** declared in `package.json` to match the
   consumer floor (`auth.provider`) and to fail fast for installers on
   pre-18.2 Node where `closeIdleConnections` is undefined.
+- **Idempotent under repeated signal delivery.** A `shuttingDown` guard
+  in the handler returns early on the second SIGTERM / SIGINT, and the
+  signal listeners are removed on first invocation. Operators that send
+  multiple SIGTERMs (k8s sending repeated TERM before falling back to
+  SIGKILL, or operators pressing Ctrl+C several times) no longer cause
+  duplicated `cleanup()` invocations or duplicate `process.exit(0)`
+  calls.
 
 ### Migration
 

@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { gracefulShutdown } from "../shutdown.mjs";
 
-const flushMicrotasks = async (): Promise<void> => {
+const flushEventLoop = async (): Promise<void> => {
 	await new Promise<void>((r) => setImmediate(r));
 	await new Promise<void>((r) => setImmediate(r));
 };
@@ -57,7 +57,7 @@ describe("gracefulShutdown", () => {
 		const handler = onSpy.mock.calls.find(([event]) => event === "SIGTERM")?.[1] as () => void;
 		listeners.set("SIGTERM", handler);
 		handler();
-		await flushMicrotasks();
+		await flushEventLoop();
 
 		expect(order).toEqual(["close", "cleanup", "exit"]);
 
@@ -124,7 +124,7 @@ describe("gracefulShutdown", () => {
 		const handler = onSpy.mock.calls.find(([event]) => event === "SIGTERM")?.[1] as () => void;
 		listeners.set("SIGTERM", handler);
 		handler();
-		await flushMicrotasks();
+		await flushEventLoop();
 
 		expect(errorSpy).toHaveBeenCalledWith("gracefulShutdown: cleanup error", cleanupErr);
 		expect(exitSpy).toHaveBeenCalledWith(0);
@@ -152,7 +152,7 @@ describe("gracefulShutdown", () => {
 		const handler = onSpy.mock.calls.find(([event]) => event === "SIGTERM")?.[1] as () => void;
 		listeners.set("SIGTERM", handler);
 		handler();
-		await flushMicrotasks();
+		await flushEventLoop();
 
 		expect(closeIdleSpy).toHaveBeenCalledOnce();
 		// Regression defense: closeAllConnections aborts in-flight requests.
@@ -184,10 +184,44 @@ describe("gracefulShutdown", () => {
 		listeners.set("SIGTERM", handler);
 
 		handler();
-		await flushMicrotasks();
+		await flushEventLoop();
 
 		expect(cleanup).toHaveBeenCalledOnce();
 		expect(closeSpy).toHaveBeenCalledOnce();
+		expect(exitSpy).toHaveBeenCalledWith(0);
+
+		closeSpy.mockRestore();
+		closeIdleSpy.mockRestore();
+		exitSpy.mockRestore();
+		onSpy.mockRestore();
+	});
+
+	it("is idempotent under repeated signal delivery (multi-SIGTERM safe)", async () => {
+		const cleanup = vi.fn();
+		const server = createServer();
+		const closeSpy = vi.spyOn(server, "close").mockImplementation((cb) => {
+			cb?.();
+			return server;
+		});
+		const closeIdleSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+		const onSpy = vi.spyOn(process, "on");
+
+		gracefulShutdown(server, cleanup);
+
+		const handler = onSpy.mock.calls.find(([event]) => event === "SIGTERM")?.[1] as () => void;
+		listeners.set("SIGTERM", handler);
+		// Simulate three rapid SIGTERM deliveries (k8s will SIGKILL after grace,
+		// but operators may also Ctrl+C several times in a row).
+		handler();
+		handler();
+		handler();
+		await flushEventLoop();
+
+		expect(cleanup).toHaveBeenCalledOnce();
+		expect(closeSpy).toHaveBeenCalledOnce();
+		expect(closeIdleSpy).toHaveBeenCalledOnce();
+		expect(exitSpy).toHaveBeenCalledOnce();
 		expect(exitSpy).toHaveBeenCalledWith(0);
 
 		closeSpy.mockRestore();
@@ -213,7 +247,7 @@ describe("gracefulShutdown", () => {
 		listeners.set("SIGTERM", handler);
 
 		handler();
-		await flushMicrotasks();
+		await flushEventLoop();
 
 		expect(closeSpy).toHaveBeenCalledOnce();
 		expect(exitSpy).toHaveBeenCalledWith(0);
