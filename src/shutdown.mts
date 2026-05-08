@@ -10,7 +10,7 @@ export function gracefulShutdown(server: Server, cleanup?: () => void | Promise<
 			}
 			process.exit(0);
 		});
-		server.closeAllConnections();
+		server.closeIdleConnections();
 	};
 	process.on("SIGTERM", handler);
 	process.on("SIGINT", handler);

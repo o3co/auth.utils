@@ -45,7 +45,7 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeAllConnections").mockImplementation(() => server);
+		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
 			order.push("exit");
 			return undefined as never;
@@ -78,7 +78,7 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeAllConnections").mockImplementation(() => server);
+		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		let exitObservedCleanupResolved = false;
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
 			exitObservedCleanupResolved = cleanupResolved;
@@ -114,7 +114,7 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeAllConnections").mockImplementation(() => server);
+		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 		const onSpy = vi.spyOn(process, "on");
@@ -136,13 +136,13 @@ describe("gracefulShutdown", () => {
 		onSpy.mockRestore();
 	});
 
-	it("calls server.closeAllConnections to drain keepalive sockets", async () => {
+	it("calls server.closeIdleConnections to drain idle keep-alive sockets without aborting in-flight requests", async () => {
 		const server = createServer();
 		const closeSpy = vi.spyOn(server, "close").mockImplementation((cb) => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeAllConnections").mockImplementation(() => server);
+		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 		const onSpy = vi.spyOn(process, "on");
 
@@ -161,14 +161,14 @@ describe("gracefulShutdown", () => {
 		onSpy.mockRestore();
 	});
 
-	it("calls cleanup function when handler is invoked", async () => {
+	it("works with a synchronous cleanup function", async () => {
 		const cleanup = vi.fn();
 		const server = createServer();
 		const closeSpy = vi.spyOn(server, "close").mockImplementation((cb) => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeAllConnections").mockImplementation(() => server);
+		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 		const onSpy = vi.spyOn(process, "on");
 
@@ -197,7 +197,7 @@ describe("gracefulShutdown", () => {
 			cb?.();
 			return server;
 		});
-		const closeAllSpy = vi.spyOn(server, "closeAllConnections").mockImplementation(() => server);
+		const closeAllSpy = vi.spyOn(server, "closeIdleConnections").mockImplementation(() => server);
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 		const onSpy = vi.spyOn(process, "on");
 
