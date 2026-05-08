@@ -3,6 +3,9 @@
   "description": "Shared utilities for auth.* services",
   "version": "0.0.0",
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.19.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/o3co/auth.utils.git"
